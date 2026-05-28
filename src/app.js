@@ -1,5 +1,6 @@
 import express from 'express';
 import cookies from 'cookie-parser';
+import mongoose from 'mongoose';
 import userModel from './models/users.model.js';
 import NoteModel from './models/notes.model.js';
 import jwt from 'jsonwebtoken';
@@ -150,6 +151,47 @@ app.get("/api/notes", async (req, res) => {
         return res.status(200).json({
             message: "Notes fetched successfully",
             notes
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+/**
+ * @route PATCH /api/notes/:id
+ * @description Update a note by id require description in the request body
+ * @access Public
+ */
+app.patch("/api/notes/:id", async (req, res) => {
+    const { id } = req.params;
+    const { description } = req.body;
+
+    // ---- Validation ----
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: "Invalid note ID" });
+    }
+
+    if (!description) {
+        return res.status(400).json({ error: "Description is required" });
+    }
+
+    if (description.trim().length < 10) {
+        return res.status(400).json({ error: "Description must be at least 10 characters long" });
+    }
+
+    try {
+        const note = await NoteModel.findById(id);
+
+        if (!note) {
+            return res.status(404).json({ error: "Note not found" });
+        }
+
+        note.description = description;
+        await note.save();
+
+        return res.status(200).json({
+            message: "Note updated successfully",
+            note
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
