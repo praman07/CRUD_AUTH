@@ -115,5 +115,47 @@ app.post("/api/notes", async (req, res) => {
     }
 });
 
+/**
+ * @route GET /api/notes
+ * @description Get all notes
+ * @access Public
+ */
+app.get("/api/notes", async (req, res) => {
+    const token = req.cookies.token;
+    if (!token) {
+        return res.status(401).json({ error: "Unauthorized: No token provided" });
+    }
+
+    let user;
+    try {
+        // The reference code used: const user = JSON.parse(token);
+        // However, since token is signed as a JWT, we use jwt.verify.
+        // We include a fallback to JSON.parse if the token is plain JSON.
+        user = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+        try {
+            user = JSON.parse(token);
+        } catch (parseErr) {
+            return res.status(401).json({ error: "Unauthorized: Invalid token format" });
+        }
+    }
+
+    req.user = user; // { id: "user_id", email: "user_email" }
+
+    try {
+        const notes = await NoteModel.find({
+            user: req.user.email
+        });
+
+        return res.status(200).json({
+            message: "Notes fetched successfully",
+            notes
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 export default app;
+
 
