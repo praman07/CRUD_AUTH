@@ -198,6 +198,38 @@ app.patch("/api/notes/:id", async (req, res) => {
     }
 });
 
+/**
+ * @route DELETE /api/notes/:id
+ * @description Delete a note by id
+ * @access Public
+ */
+app.delete("/api/notes/:id", async (req, res) => {
+    const { id } = req.params;
+
+    // ---- Check if id is valid mongoose ObjectId ----
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: "Invalid note ID" });
+    }
+
+    try {
+        // ---- Check if the note exists ----
+        const note = await NoteModel.findById(id);
+
+        if (!note) {
+            return res.status(404).json({ error: "Note not found" });
+        }
+
+        // ---- If the note exists, delete it ----
+        await NoteModel.findByIdAndDelete(id);
+
+        return res.status(200).json({
+            message: "Note deleted successfully"
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 export default app;
 
 
